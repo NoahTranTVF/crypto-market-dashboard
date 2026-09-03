@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useIsOnline } from '../hooks/useIsOnline'
 import { formatAgo } from '../lib/format'
 import { STALE_AFTER_MS } from '../lib/queryClient'
 
@@ -8,6 +9,7 @@ const CLOCK_MS = 5000
 export interface FeedStatusProps {
   dataUpdatedAt: number
   isFetching: boolean
+  /** A fetch is queued but cannot run, which react-query reports while offline. */
   isPaused: boolean
   isError: boolean
   failureCount: number
@@ -46,6 +48,7 @@ export function FeedStatus({
   failureCount,
   onRetry,
 }: FeedStatusProps) {
+  const isOffline = !useIsOnline() || isPaused
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
@@ -59,7 +62,7 @@ export function FeedStatus({
   let tone: Tone = 'live'
   let message = `Live · ${lastUpdated}`
 
-  if (isPaused) {
+  if (isOffline) {
     tone = 'warn'
     message = `Offline · showing prices from ${formatAgo(age)}`
   } else if (isError) {
@@ -80,7 +83,7 @@ export function FeedStatus({
     <div className="flex items-center gap-2 text-xs" aria-live="polite">
       <span className={`size-2 shrink-0 rounded-full ${DOT[tone]}`} aria-hidden="true" />
       <span className={TEXT[tone]}>{message}</span>
-      {(isError || isPaused) && (
+      {(isError || isOffline) && (
         <button
           type="button"
           onClick={onRetry}
