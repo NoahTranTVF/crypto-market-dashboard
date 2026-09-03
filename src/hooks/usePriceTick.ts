@@ -34,6 +34,11 @@ export function usePriceTick(coins: CoinMarket[] | undefined): Record<string, Ti
 
     if (Object.keys(moved).length === 0) return
 
+    // A flash is a timed side effect of new data arriving, not a value that can
+    // be derived during render. Deriving it at render time also breaks under
+    // StrictMode: the second invocation sees the ref already updated and would
+    // clear the tick before it is ever shown.
+    // oxlint-disable-next-line react/set-state-in-effect
     setTicks(moved)
     const timer = setTimeout(() => setTicks({}), TICK_DURATION_MS)
     return () => clearTimeout(timer)
