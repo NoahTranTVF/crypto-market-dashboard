@@ -22,19 +22,28 @@ export function ThemeToggle() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
-    try {
-      localStorage.setItem(THEME_KEY, theme)
-    } catch {
-      // Preference just will not persist; the toggle still works this session.
-    }
   }, [theme])
+
+  /**
+   * Only an explicit choice is persisted. Writing the system-derived default on
+   * mount would silently pin the theme on first visit and stop the app from
+   * ever following the operating system again.
+   */
+  function choose(next: Theme) {
+    setTheme(next)
+    try {
+      localStorage.setItem(THEME_KEY, next)
+    } catch {
+      // Preference will not survive a reload; the toggle still works this session.
+    }
+  }
 
   const next = theme === 'dark' ? 'light' : 'dark'
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(next)}
+      onClick={() => choose(next)}
       aria-label={`Switch to ${next} theme`}
       className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
     >
