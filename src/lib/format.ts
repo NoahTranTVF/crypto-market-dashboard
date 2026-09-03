@@ -2,6 +2,17 @@ import type { Currency } from '../api/coingecko'
 
 const LOCALE = 'en-AU'
 
+/** Percentages are shown to two places; direction must agree with what is shown. */
+const PERCENT_DP = 2
+
+/**
+ * Always name the currency rather than printing a bare "$".
+ *
+ * With both USD and AUD selectable, a lone dollar sign is ambiguous, and an
+ * ambiguous price is the one defect a money display cannot afford.
+ */
+const CURRENCY_DISPLAY = 'code' as const
+
 /** Shown wherever the API gives us null rather than a number. */
 export const EMPTY = '—'
 
@@ -18,6 +29,7 @@ export function formatPrice(value: number | null, currency: Currency): string {
   return new Intl.NumberFormat(LOCALE, {
     style: 'currency',
     currency: currency.toUpperCase(),
+    currencyDisplay: CURRENCY_DISPLAY,
     maximumFractionDigits: Math.abs(value) < 1 ? 8 : 2,
   }).format(value)
 }
@@ -28,8 +40,8 @@ export function formatPercent(value: number | null): string {
 
   return new Intl.NumberFormat(LOCALE, {
     style: 'percent',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: PERCENT_DP,
+    maximumFractionDigits: PERCENT_DP,
     signDisplay: 'exceptZero',
   }).format(value / 100)
 }
@@ -41,6 +53,7 @@ export function formatCompact(value: number | null, currency: Currency): string 
   return new Intl.NumberFormat(LOCALE, {
     style: 'currency',
     currency: currency.toUpperCase(),
+    currencyDisplay: CURRENCY_DISPLAY,
     notation: 'compact',
     maximumFractionDigits: 2,
   }).format(value)
@@ -51,8 +64,14 @@ export type Direction = 'up' | 'down' | 'flat'
 /** Null when unknown, so the UI can show a neutral dash instead of a false "flat". */
 export function directionOf(value: number | null): Direction | null {
   if (value == null || !Number.isFinite(value)) return null
-  if (value > 0) return 'up'
-  if (value < 0) return 'down'
+
+  // Decide from the rounded value, not the raw one. A -0.0004% change displays
+  // as "0.00%", so a red down arrow beside it would contradict the number.
+  const factor = 10 ** PERCENT_DP
+  const rounded = Math.round(value * factor) / factor
+
+  if (rounded > 0) return 'up'
+  if (rounded < 0) return 'down'
   return 'flat'
 }
 
