@@ -1,20 +1,19 @@
+import { TICK_DURATION_MS, type Currency } from '@/shared/constants'
+import type { CoinMarket } from '@/shared/types/coin'
 import { useEffect, useRef, useState } from 'react'
-import type { CoinMarket } from '../api/coingecko'
-
-/** Must match the animation duration in index.css. */
-const TICK_DURATION_MS = 800
 
 export type Tick = 'up' | 'down'
 
 /**
- * Flag which prices moved since the last poll, and in which direction.
+ * Which prices moved since the last poll, and in which direction.
  *
- * This is what makes the grid read as a live board rather than a table that
- * silently rewrites itself: a changed price flashes briefly, the way drifting
- * odds do. React Query's structural sharing keeps the array identity stable
- * when nothing changed, so this effect only runs on a real update.
+ * State lives here rather than per card: cards unmount when the search filters
+ * them out, which would wipe their previous price and lose the next flash.
  */
-export function usePriceTick(coins: CoinMarket[] | undefined): Record<string, Tick> {
+export function usePriceTick(
+  coins: CoinMarket[] | undefined,
+  currency: Currency,
+): Record<string, Tick> {
   const previousPrices = useRef(new Map<string, number>())
   const [ticks, setTicks] = useState<Record<string, Tick>>({})
 
@@ -25,24 +24,24 @@ export function usePriceTick(coins: CoinMarket[] | undefined): Record<string, Ti
 
     for (const coin of coins) {
       if (coin.current_price == null) continue
-      const before = previousPrices.current.get(coin.id)
+      // Keyed by currency too: a USD to AUD switch reprices every coin, and
+      // comparing across currencies would flash the board as a rally.
+      const key = `${currency}:${coin.id}`
+      const before = previousPrices.current.get(key)
       if (before != null && before !== coin.current_price) {
         moved[coin.id] = coin.current_price > before ? 'up' : 'down'
       }
-      previousPrices.current.set(coin.id, coin.current_price)
+      previousPrices.current.set(key, coin.current_price)
     }
 
     if (Object.keys(moved).length === 0) return
 
-    // A flash is a timed side effect of new data arriving, not a value that can
-    // be derived during render. Deriving it at render time also breaks under
-    // StrictMode: the second invocation sees the ref already updated and would
-    // clear the tick before it is ever shown.
+    // A timed side effect of new data, not a value derivable during render.
     // oxlint-disable-next-line react/set-state-in-effect
     setTicks(moved)
     const timer = setTimeout(() => setTicks({}), TICK_DURATION_MS)
     return () => clearTimeout(timer)
-  }, [coins])
+  }, [coins, currency])
 
   return ticks
 }

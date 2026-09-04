@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useIsOnline } from '../hooks/useIsOnline'
-import { formatAgo } from '../lib/format'
-import { STALE_AFTER_MS } from '../lib/queryClient'
 
-/** How often the "updated Ns ago" label refreshes. */
-const CLOCK_MS = 5000
+import { useIsOnline } from '@/hooks/useIsOnline'
+import { FEED_CLOCK_MS, STALE_AFTER_MS } from '@/shared/constants'
+import { formatAgo } from '@/shared/lib/format'
 
 export interface FeedStatusProps {
   dataUpdatedAt: number
   isFetching: boolean
-  /** A fetch is queued but cannot run, which react-query reports while offline. */
   isPaused: boolean
   isError: boolean
   failureCount: number
@@ -32,14 +29,7 @@ const TEXT: Record<Tone, string> = {
   error: 'text-down',
 }
 
-/**
- * Reports the health of the feed without ever hiding the prices.
- *
- * Everything here is derived from state React Query already tracks, including
- * the offline case: its onlineManager pauses queries when the browser goes
- * offline, which surfaces as fetchStatus 'paused'. Listening to `navigator`
- * events ourselves would duplicate that.
- */
+/** Feed health, never hiding the prices. All of it derives from React Query state. */
 export function FeedStatus({
   dataUpdatedAt,
   isFetching,
@@ -47,12 +37,12 @@ export function FeedStatus({
   isError,
   failureCount,
   onRetry,
-}: FeedStatusProps) {
+}: Readonly<FeedStatusProps>) {
   const isOffline = !useIsOnline() || isPaused
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), CLOCK_MS)
+    const timer = setInterval(() => setNow(Date.now()), FEED_CLOCK_MS)
     return () => clearInterval(timer)
   }, [])
 
@@ -61,29 +51,34 @@ export function FeedStatus({
 
   let tone: Tone = 'live'
   let message = `Live · ${lastUpdated}`
+  let announcement = 'Price feed live.'
 
   if (isOffline) {
     tone = 'warn'
     message = `Offline · showing prices from ${formatAgo(age)}`
+    announcement = 'Offline. Showing the last prices received.'
   } else if (isError) {
     tone = 'error'
     message =
       failureCount > 0
         ? `Reconnecting (attempt ${failureCount}) · showing prices from ${formatAgo(age)}`
         : `Update failed · showing prices from ${formatAgo(age)}`
+    announcement = 'Price feed update failed. Showing the last prices received.'
   } else if (isFetching) {
     tone = 'busy'
     message = 'Updating…'
+    // Announcement left as 'live': toggling it would re-announce every poll.
   } else if (age > STALE_AFTER_MS) {
     tone = 'warn'
     message = `Stale · ${lastUpdated}`
+    announcement = 'Prices are out of date.'
   }
 
   return (
-    <div className="flex items-center gap-2 text-xs" aria-live="polite">
+    <div className="flex items-center gap-2 text-xs">
       <span className={`size-2 shrink-0 rounded-full ${DOT[tone]}`} aria-hidden="true" />
       <span className={TEXT[tone]}>{message}</span>
-      {(isError || isOffline) && (
+      {isError && !isOffline && (
         <button
           type="button"
           onClick={onRetry}
@@ -92,6 +87,9 @@ export function FeedStatus({
           Retry now
         </button>
       )}
+      <span aria-live="polite" className="sr-only">
+        {announcement}
+      </span>
     </div>
   )
 }

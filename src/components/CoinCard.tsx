@@ -1,7 +1,9 @@
-import { Link } from 'react-router-dom'
-import type { CoinMarket, Currency } from '../api/coingecko'
-import type { Tick } from '../hooks/usePriceTick'
-import { formatCompact, formatPrice } from '../lib/format'
+import { Link, useLocation } from 'react-router-dom'
+
+import type { Tick } from '@/hooks/usePriceTick'
+import type { Currency } from '@/shared/constants'
+import { formatCompact, formatPrice } from '@/shared/lib/format'
+import type { CoinMarket } from '@/shared/types/coin'
 import { PriceChange } from './PriceChange'
 
 interface CoinCardProps {
@@ -10,10 +12,13 @@ interface CoinCardProps {
   tick?: Tick
 }
 
-export function CoinCard({ coin, currency, tick }: CoinCardProps) {
+export function CoinCard({ coin, currency, tick }: Readonly<CoinCardProps>) {
+  // Carried through, or an AUD board opens a USD detail page.
+  const { search } = useLocation()
+
   return (
     <Link
-      to={`/coin/${coin.id}`}
+      to={{ pathname: `/coin/${coin.id}`, search }}
       className="block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
     >
       <div className="flex items-center gap-3">
@@ -36,8 +41,6 @@ export function CoinCard({ coin, currency, tick }: CoinCardProps) {
 
       <div className="mt-4 flex items-end justify-between gap-2">
         <p
-          // The flash is keyed off the class being newly applied, then removed
-          // by usePriceTick once the animation has run.
           className={`rounded px-1 text-xl font-semibold text-slate-900 tabular-nums dark:text-slate-50 ${
             tick ? `tick-${tick}` : ''
           }`}

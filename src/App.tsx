@@ -1,27 +1,27 @@
 import { useMemo } from 'react'
-import { CoinGrid } from './components/CoinGrid'
-import { Controls } from './components/Controls'
-import { FeedStatus } from './components/FeedStatus'
-import { EmptyState, ErrorState, GridSkeleton } from './components/States'
-import { ThemeToggle } from './components/ThemeToggle'
-import { useFilterState } from './hooks/useFilterState'
-import { useMarkets } from './hooks/useMarkets'
-import { usePriceTick } from './hooks/usePriceTick'
-import { filterAndSort } from './lib/filterSort'
+
+import { CoinGrid } from '@/components/CoinGrid'
+import { Controls } from '@/components/Controls'
+import { FeedStatus } from '@/components/FeedStatus'
+import { EmptyState, ErrorState, GridSkeleton } from '@/components/States'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { useFilterState } from '@/hooks/useFilterState'
+import { useMarketsQuery } from '@/hooks/useMarketsQuery'
+import { usePriceTick } from '@/hooks/usePriceTick'
+import { filterAndSort } from '@/shared/lib/filterSort'
 
 export default function App() {
   const { query, sortKey, direction, currency, update } = useFilterState()
-  const markets = useMarkets(currency)
-  const ticks = usePriceTick(markets.data)
+  const markets = useMarketsQuery(currency)
+  const ticks = usePriceTick(markets.data, currency)
 
   const coins = useMemo(
     () => filterAndSort(markets.data ?? [], { query, sortKey, direction }),
     [markets.data, query, sortKey, direction],
   )
 
-  // Once prices have loaded they stay on screen. A failed refetch degrades the
-  // status line rather than replacing the board, because a blank board is worse
-  // than a slightly old one.
+  // Once loaded, prices stay on screen: a failed refetch degrades FeedStatus
+  // rather than replacing the board.
   const hasData = markets.data != null
 
   return (
@@ -52,7 +52,7 @@ export default function App() {
             <FeedStatus
               dataUpdatedAt={markets.dataUpdatedAt}
               isFetching={markets.isFetching}
-              isPaused={markets.fetchStatus === 'paused'}
+              isPaused={markets.isPaused}
               isError={markets.isError}
               failureCount={markets.failureCount}
               onRetry={() => void markets.refetch()}
