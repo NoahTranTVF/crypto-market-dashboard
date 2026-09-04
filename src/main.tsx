@@ -1,11 +1,14 @@
-import App from '@/App'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { RouteSkeleton } from '@/components/States'
-import { queryClient } from '@/shared/lib/queryClient'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+
+import App from '@/App'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { RouteSkeleton } from '@/components/States'
+import NotFound from '@/routes/NotFound'
+import { queryClient } from '@/shared/lib/queryClient'
+
 import '@/index.css'
 
 // Split at the route: only the detail page pulls in the chart library.
@@ -22,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
             <Routes>
               <Route path="/" element={<App />} />
               <Route path="/coin/:id" element={<CoinDetail />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </BrowserRouter>

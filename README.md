@@ -3,6 +3,8 @@
 A live market board for the top 20 cryptocurrencies by market cap.
 React 19 · TypeScript · TanStack Query · Recharts · Tailwind 4.
 
+**Live:** https://crypto-market-dashboard-delta.vercel.app
+
 ![Dashboard](docs/dashboard.png)
 
 ## Setup
