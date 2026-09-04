@@ -1,4 +1,4 @@
-import { directionOf, formatPercent } from '../lib/format'
+import { directionOf, formatPercent } from '@/shared/lib/format'
 
 const STYLES = {
   up: 'text-up',
@@ -8,13 +8,8 @@ const STYLES = {
 
 const ARROWS = { up: '▲', down: '▼', flat: '' } as const
 
-/**
- * 24h change as arrow + sign + colour.
- *
- * Colour alone would fail WCAG 1.4.1 and is unreadable to a colour-blind user,
- * so the arrow and the explicit +/- sign carry the same meaning independently.
- */
-export function PriceChange({ value }: { value: number | null }) {
+/** Arrow and sign carry the direction independently of colour (WCAG 1.4.1). */
+export function PriceChange({ value }: Readonly<{ value: number | null }>) {
   const direction = directionOf(value)
   const text = formatPercent(value)
 

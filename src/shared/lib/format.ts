@@ -1,28 +1,15 @@
-import type { Currency } from '../api/coingecko'
+import {
+  CURRENCY_DISPLAY,
+  EMPTY,
+  LOCALE,
+  PERCENT_DP,
+  PRICE_DP,
+  SMALL_PRICE_BELOW,
+  SMALL_PRICE_DP,
+  type Currency,
+} from '@/shared/constants'
 
-const LOCALE = 'en-AU'
-
-/** Percentages are shown to two places; direction must agree with what is shown. */
-const PERCENT_DP = 2
-
-/**
- * Always name the currency rather than printing a bare "$".
- *
- * With both USD and AUD selectable, a lone dollar sign is ambiguous, and an
- * ambiguous price is the one defect a money display cannot afford.
- */
-const CURRENCY_DISPLAY = 'code' as const
-
-/** Shown wherever the API gives us null rather than a number. */
-export const EMPTY = '—'
-
-/**
- * Format a price without losing small coins.
- *
- * BTC trades around $108,000 while SHIB trades around $0.000012. A fixed two
- * decimal places would render every sub-cent coin as "$0.00", which is a money
- * display bug, so precision widens below $1.
- */
+/** Format a price without losing small coins — see SMALL_PRICE_BELOW. */
 export function formatPrice(value: number | null, currency: Currency): string {
   if (value == null || !Number.isFinite(value)) return EMPTY
 
@@ -30,7 +17,7 @@ export function formatPrice(value: number | null, currency: Currency): string {
     style: 'currency',
     currency: currency.toUpperCase(),
     currencyDisplay: CURRENCY_DISPLAY,
-    maximumFractionDigits: Math.abs(value) < 1 ? 8 : 2,
+    maximumFractionDigits: Math.abs(value) < SMALL_PRICE_BELOW ? SMALL_PRICE_DP : PRICE_DP,
   }).format(value)
 }
 
@@ -46,7 +33,7 @@ export function formatPercent(value: number | null): string {
   }).format(value / 100)
 }
 
-/** Large figures like market cap, e.g. "$2.17T". */
+/** Large figures like market cap, e.g. "USD 2.17T". */
 export function formatCompact(value: number | null, currency: Currency): string {
   if (value == null || !Number.isFinite(value)) return EMPTY
 
@@ -55,7 +42,7 @@ export function formatCompact(value: number | null, currency: Currency): string 
     currency: currency.toUpperCase(),
     currencyDisplay: CURRENCY_DISPLAY,
     notation: 'compact',
-    maximumFractionDigits: 2,
+    maximumFractionDigits: PRICE_DP,
   }).format(value)
 }
 
@@ -65,14 +52,36 @@ export type Direction = 'up' | 'down' | 'flat'
 export function directionOf(value: number | null): Direction | null {
   if (value == null || !Number.isFinite(value)) return null
 
-  // Decide from the rounded value, not the raw one. A -0.0004% change displays
-  // as "0.00%", so a red down arrow beside it would contradict the number.
+  // Round first: -0.0004% displays as "0.00%", so a red arrow would contradict it.
   const factor = 10 ** PERCENT_DP
   const rounded = Math.round(value * factor) / factor
 
   if (rounded > 0) return 'up'
   if (rounded < 0) return 'down'
   return 'flat'
+}
+
+/** Y axis labels. Bare numbers — the currency is named in the tooltip and caption. */
+export function formatAxisPrice(value: number): string {
+  return new Intl.NumberFormat(LOCALE, {
+    notation: Math.abs(value) >= 10_000 ? 'compact' : 'standard',
+    maximumFractionDigits: Math.abs(value) < SMALL_PRICE_BELOW ? SMALL_PRICE_DP : PRICE_DP,
+  }).format(value)
+}
+
+/** X axis labels for the chart, e.g. "28 Aug". */
+export function formatDay(milliseconds: number): string {
+  return new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' }).format(milliseconds)
+}
+
+/** Full timestamp for the chart tooltip, e.g. "28 Aug, 3:00 pm". */
+export function formatDayTime(milliseconds: number): string {
+  return new Intl.DateTimeFormat(LOCALE, {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(milliseconds)
 }
 
 /** Compact age for the feed status, e.g. "8s ago" / "3m ago". */

@@ -1,7 +1,14 @@
 import { useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { CURRENCIES, type Currency } from '../api/coingecko'
-import { SORT_KEYS, type SortDirection, type SortKey } from '../lib/filterSort'
+
+import {
+  CURRENCIES,
+  SORT_DIRECTIONS,
+  SORT_KEYS,
+  type Currency,
+  type SortDirection,
+  type SortKey,
+} from '@/shared/constants'
 
 export interface FilterState {
   query: string
@@ -17,25 +24,27 @@ const DEFAULTS: FilterState = {
   currency: 'usd',
 }
 
+const PARAM_KEYS: Record<keyof FilterState, string> = {
+  query: 'q',
+  sortKey: 'sort',
+  direction: 'dir',
+  currency: 'cur',
+}
+
 /** URL params are user input, so unknown values fall back rather than propagate. */
 function oneOf<T extends string>(allowed: readonly T[], value: string | null, fallback: T): T {
   return allowed.includes(value as T) ? (value as T) : fallback
 }
 
-/**
- * Search and sort live in the query string rather than component state.
- *
- * It costs nothing over useState and buys shareable links, back-button support
- * and state that survives a reload.
- */
+/** Filter state in the URL, so a view is shareable and survives a reload. */
 export function useFilterState() {
   const [params, setParams] = useSearchParams()
 
   const state: FilterState = {
-    query: params.get('q') ?? DEFAULTS.query,
-    sortKey: oneOf(SORT_KEYS, params.get('sort'), DEFAULTS.sortKey),
-    direction: oneOf(['asc', 'desc'] as const, params.get('dir'), DEFAULTS.direction),
-    currency: oneOf(CURRENCIES, params.get('cur'), DEFAULTS.currency),
+    query: params.get(PARAM_KEYS.query) ?? DEFAULTS.query,
+    sortKey: oneOf(SORT_KEYS, params.get(PARAM_KEYS.sortKey), DEFAULTS.sortKey),
+    direction: oneOf(SORT_DIRECTIONS, params.get(PARAM_KEYS.direction), DEFAULTS.direction),
+    currency: oneOf(CURRENCIES, params.get(PARAM_KEYS.currency), DEFAULTS.currency),
   }
 
   const update = useCallback(
@@ -43,10 +52,9 @@ export function useFilterState() {
       setParams(
         (previous) => {
           const next = new URLSearchParams(previous)
-          const keys = { query: 'q', sortKey: 'sort', direction: 'dir', currency: 'cur' } as const
 
           for (const [field, value] of Object.entries(patch)) {
-            const key = keys[field as keyof FilterState]
+            const key = PARAM_KEYS[field as keyof FilterState]
             // Keep defaults out of the URL so a shared link stays readable.
             if (!value || value === DEFAULTS[field as keyof FilterState]) next.delete(key)
             else next.set(key, value)

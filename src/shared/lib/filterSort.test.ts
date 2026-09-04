@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { CoinMarket } from '../api/coingecko'
-import { filterAndSort, type FilterSortOptions } from './filterSort'
-import { directionOf, EMPTY, formatPercent, formatPrice } from './format'
+import { EMPTY } from '@/shared/constants'
+import { filterAndSort, type FilterSortOptions } from '@/shared/lib/filterSort'
+import { directionOf, formatDay, formatPercent, formatPrice } from '@/shared/lib/format'
+import type { CoinMarket } from '@/shared/types/coin'
 
 function coin(overrides: Partial<CoinMarket> & Pick<CoinMarket, 'id'>): CoinMarket {
   return {
@@ -109,6 +110,15 @@ describe('formatPercent', () => {
 
   it('renders a dash for coins with no 24h history', () => {
     expect(formatPercent(null)).toBe(EMPTY)
+  })
+})
+
+describe('formatDay', () => {
+  it('labels a chart axis with day then short month', () => {
+    // Asserts the shape, not the exact day: formatDay renders in the viewer's
+    // timezone, and a fixed instant lands on either side of midnight depending
+    // on the offset the test happens to run under.
+    expect(formatDay(Date.UTC(2026, 7, 28, 12))).toMatch(/^\d{1,2} Aug$/)
   })
 })
 

@@ -8,7 +8,7 @@
   --color-down: oklch(0.64 0.21 25);
 }
 
-/* A price tick flashes once when the value changes, the way an odds board does. */
+/* 800ms must match TICK_DURATION_MS in hooks/usePriceTick.ts. */
 @keyframes tick-up {
   from { background-color: color-mix(in oklch, var(--color-up) 22%, transparent); }
 }
