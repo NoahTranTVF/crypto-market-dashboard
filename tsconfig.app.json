@@ -10,6 +10,8 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
+    // No baseUrl: TS 6 deprecates it; paths resolve relative to this file.
+    "paths": { "@/*": ["./src/*"] },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
@@ -17,6 +19,8 @@
     "jsx": "react-jsx",
 
     /* Linting */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
