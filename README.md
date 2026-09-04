@@ -74,10 +74,12 @@ formatted, why the chart is split at the route — is in
 ## Deploying
 
 ```bash
-npx vercel        # or: npm run build && serve dist/
+npx vercel
 ```
 
-The app is a client-side SPA, so the host must rewrite unknown paths to
-`index.html` — otherwise a deep link like `/coin/bitcoin` 404s on reload.
-Vercel's Vite preset does this automatically; on a plain static host, add the
-fallback yourself.
+`vercel.json` pins the framework, build command and output directory, and
+rewrites unknown paths to `index.html`. Without that fallback a deep link like
+`/coin/bitcoin` 404s on reload, because the route only exists in the browser.
+Rewrites run after the filesystem is checked, so hashed assets still serve
+directly. Any other static host works the same way: serve `dist/` and add the
+same fallback.
