@@ -24,11 +24,7 @@ export function ThemeToggle() {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
 
-  /**
-   * Only an explicit choice is persisted. Writing the system-derived default on
-   * mount would silently pin the theme on first visit and stop the app from
-   * ever following the operating system again.
-   */
+  /** Only an explicit choice is persisted, or the app stops following the OS. */
   function choose(next: Theme) {
     setTheme(next)
     try {
@@ -45,7 +41,7 @@ export function ThemeToggle() {
       type="button"
       onClick={() => choose(next)}
       aria-label={`Switch to ${next} theme`}
-      className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+      className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700 transition hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
     >
       <span aria-hidden="true">{theme === 'dark' ? '☀' : '☾'}</span>
     </button>

@@ -1,12 +1,13 @@
+import { PriceChange } from '@/components/PriceChange'
+import { PriceChart } from '@/components/PriceChart'
+import { ChartSkeleton, CoinHeaderSkeleton, ErrorState } from '@/components/States'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { CHART_DAYS } from '@/shared/constants'
+import { useFilterState } from '@/hooks/useFilterState'
+import { useMarketChartQuery } from '@/hooks/useMarketChartQuery'
+import { useMarketsQuery } from '@/hooks/useMarketsQuery'
+import { formatCompact, formatPrice } from '@/shared/lib/format'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { PriceChange } from '../components/PriceChange'
-import { PriceChart } from '../components/PriceChart'
-import { ErrorState } from '../components/States'
-import { ThemeToggle } from '../components/ThemeToggle'
-import { useFilterState } from '../hooks/useFilterState'
-import { CHART_DAYS, useMarketChart } from '../hooks/useMarketChart'
-import { useMarkets } from '../hooks/useMarkets'
-import { formatCompact, formatPrice } from '../lib/format'
 
 const PANEL =
   'rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900'
@@ -16,10 +17,9 @@ export default function CoinDetail() {
   const { search } = useLocation()
   const { currency } = useFilterState()
 
-  // Same query key as the dashboard, so arriving by click costs no request and
-  // arriving by deep link fetches the list once.
-  const markets = useMarkets(currency)
-  const chart = useMarketChart(id, currency)
+  // Same query key as the dashboard: arriving by click costs no request.
+  const markets = useMarketsQuery(currency)
+  const chart = useMarketChartQuery(id, currency)
   const coin = markets.data?.find((candidate) => candidate.id === id)
 
   return (
@@ -52,9 +52,7 @@ export default function CoinDetail() {
           </div>
         )}
 
-        {!coin && markets.isPending && (
-          <div className={`${PANEL} h-24 animate-pulse`} aria-hidden="true" />
-        )}
+        {!coin && markets.isPending && <CoinHeaderSkeleton />}
 
         {coin && (
           <>
@@ -80,7 +78,16 @@ export default function CoinDetail() {
 
             <section className={PANEL}>
               <h2 className="sr-only">Price history</h2>
-              {chart.isPending && <div className="h-60 animate-pulse" aria-hidden="true" />}
+              {chart.isPending &&
+                // Paused means React Query is holding the request until the
+                // connection returns, so a skeleton would pulse forever.
+                (chart.isPaused ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Offline — the chart will load when the connection returns.
+                  </p>
+                ) : (
+                  <ChartSkeleton />
+                ))}
               {chart.isError && (
                 <ErrorState
                   message={chart.error.message}
